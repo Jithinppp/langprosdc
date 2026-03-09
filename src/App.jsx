@@ -173,20 +173,30 @@ function App() {
               </div>
               <div>
                 <label className="block text-sm font-semibold text-neutral-900">Cable Signal Delay</label>
-                <div className="flex items-center gap-2 mt-1">
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={cableDelay}
-                    onChange={e => setCableDelay(parseFloat(e.target.value) || DEFAULT_CABLE_DELAY)}
-                    className="w-24 px-2 py-1 text-sm border border-neutral-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none font-mono"
-                  />
-                  <span className="text-sm text-neutral-500">ns/m</span>
+                <div className="flex flex-col mt-1">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={cableDelay}
+                      onChange={e => setCableDelay(e.target.value === '' ? '' : (parseFloat(e.target.value) || 0))}
+                      onBlur={e => {
+                        if (e.target.value === '' || parseFloat(e.target.value) <= 0) {
+                          setCableDelay(DEFAULT_CABLE_DELAY)
+                        }
+                      }}
+                      className="w-24 px-2 py-1 text-sm border border-neutral-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none font-mono"
+                    />
+                    <span className="text-sm text-neutral-500">ns/m</span>
+                  </div>
+                  <p className="text-xs text-neutral-500 mt-1">e.g., Belden 4 or Jacobs 5</p>
                 </div>
               </div>
             </div>
+
             <div className="h-px w-full sm:h-10 sm:w-px bg-neutral-200 hidden sm:block"></div>
+
             <div className="flex flex-col gap-1 text-sm text-neutral-600">
               <div className="flex justify-between gap-4">
                 <span>Max Trunk Length:</span>
@@ -299,8 +309,8 @@ function App() {
           {results && <ResultsSection results={results} />}
         </div>
 
-      </div>
-    </div>
+      </div >
+    </div >
   )
 }
 
