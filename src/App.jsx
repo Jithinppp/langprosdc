@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react'
+import icon from './assets/icon.png'
 
 // ============================================================
 // Constants
@@ -152,11 +153,11 @@ function App() {
 
         {/* Header */}
         <header className="mb-10 flex flex-col items-center text-center">
-          <div className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 tracking-wide mb-4">
-            <BoltIcon />
-            INTEGRUS System Tool
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 text-md font-semibold tracking-wider mb-4 ">
+            <img src={icon} alt="LANGPROS" className="w-10 h-10" />
+            LANGPROS
           </div>
-          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-neutral-900 mb-3">
+          <h1 className="text-3xl sm:text-2xl font-bold tracking-tight text-neutral-900 mb-3">
             Delay Switch Calculator
           </h1>
           <p className="text-neutral-500 text-sm max-w-lg">
