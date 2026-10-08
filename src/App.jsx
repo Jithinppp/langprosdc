@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react'
 import icon from './assets/icon.png'
+import { generateDelayPdf } from './utils/generateDelayPdf'
 
 // ============================================================
 // Constants
@@ -92,6 +93,11 @@ const ResetIcon = () => (
 const WarnIcon = () => (
   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
     <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+  </svg>
+)
+const DownloadIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
   </svg>
 )
 
@@ -307,7 +313,7 @@ function App() {
 
         {/* Results Section */}
         <div ref={resultsRef}>
-          {results && <ResultsSection results={results} />}
+          {results && <ResultsSection results={results} cableDelay={cableDelay} />}
         </div>
 
       </div >
@@ -318,8 +324,23 @@ function App() {
 // ============================================================
 // Results Section
 // ============================================================
-function ResultsSection({ results }) {
+function ResultsSection({ results, cableDelay }) {
   const activeResults = results.filter(r => r.radiators.length > 0)
+  const [reportTitle, setReportTitle] = useState('Delay Switch Report')
+
+  const handleDownloadPdf = () => {
+    try {
+      generateDelayPdf({
+        results,
+        cableDelay,
+        constants: { MAX_TRUNK_LENGTH, THEORETICAL_MAX_DELAY },
+        title: reportTitle.trim() || 'Delay Switch Report',
+      })
+    } catch (err) {
+      console.error('PDF export failed:', err)
+      alert('PDF export failed. Open DevTools console (F12) and send the error text.')
+    }
+  }
 
   if (activeResults.length === 0) {
     return (
@@ -331,8 +352,26 @@ function ResultsSection({ results }) {
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-16 border-t border-neutral-200 pt-10">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4 justify-between">
         <h2 className="text-2xl font-bold tracking-tight text-neutral-900">Calculation Results</h2>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+          <input
+            type="text"
+            value={reportTitle}
+            onChange={e => setReportTitle(e.target.value)}
+            placeholder="PDF title"
+            maxLength={80}
+            aria-label="PDF title"
+            className="w-full sm:w-52 px-3 py-2.5 text-sm border border-neutral-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
+          />
+          <button
+            onClick={handleDownloadPdf}
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 bg-neutral-900 hover:bg-neutral-800 text-white text-sm font-medium rounded-lg transition-colors shadow-sm whitespace-nowrap"
+          >
+            <DownloadIcon />
+            Download Delay PDF
+          </button>
+        </div>
       </div>
 
       <div className="grid gap-6">
