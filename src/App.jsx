@@ -2,6 +2,7 @@ import { useState, useRef } from 'react'
 import icon from './assets/icon.png'
 import { generateDelayPdf } from './utils/generateDelayPdf'
 import { MANUFACTURERS, profileFor, calculateDelays } from './utils/calc'
+import { HowToGuide } from './components/HowToGuide'
 
 // ============================================================
 // Constants
@@ -43,6 +44,12 @@ const DownloadIcon = () => (
   </svg>
 )
 
+const HelpIcon = () => (
+  <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+)
+
 // ============================================================
 // App Component
 // ============================================================
@@ -57,6 +64,8 @@ function App() {
   const [results, setResults] = useState(null)
   const [calcProfile, setCalcProfile] = useState(null)
   const resultsRef = useRef(null)
+  const [view, setView] = useState('calculator')
+  const howToLinkRef = useRef(null)
   const profile = profileFor(manufacturer, televicStep)
 
   const handleNumRadiators = (value) => {
@@ -103,7 +112,24 @@ function App() {
     setCalcProfile(null)
   }
 
+  const handleOpenGuide = () => {
+    setView('guide')
+    window.scrollTo(0, 0)
+  }
+
+  const handleBackToCalculator = () => {
+    setView('calculator')
+    // Restore focus to the How-to link after React commits the swap.
+    requestAnimationFrame(() => {
+      howToLinkRef.current?.focus({ preventScroll: true })
+    })
+  }
+
   const currentOutput = outputs[activeTab]
+
+  if (view === 'guide') {
+    return <HowToGuide onBack={handleBackToCalculator} />
+  }
 
   return (
     <div className="min-h-screen bg-neutral-50 text-neutral-900 antialiased font-sans selection:bg-blue-200">
@@ -121,6 +147,15 @@ function App() {
           <p className="text-neutral-500 text-sm max-w-lg">
             Calculate infrared signal propagation delays and switch settings for Bosch, TAIDEN and Televic IR radiator systems.
           </p>
+          <button
+            type="button"
+            ref={howToLinkRef}
+            onClick={handleOpenGuide}
+            aria-label="How to calculate delay switches"
+            className="inline-flex items-center gap-1 px-2 py-1 text-xs sm:text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline underline-offset-4 rounded hover:bg-blue-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+          >
+            <HelpIcon /> How to
+          </button>
         </header>
 
         {/* Global Configuration */}
