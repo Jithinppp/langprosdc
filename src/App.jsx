@@ -265,7 +265,6 @@ function App() {
                         <input
                           type="number"
                           step="0.1"
-                          min="0"
                           placeholder="0.0"
                           value={rad.length}
                           onChange={e => handleLengthChange(i, e.target.value)}
@@ -398,7 +397,7 @@ function ResultsSection({ results, cableDelay, profile }) {
             {r.maxDelay > profile.budget && (
               <div className="px-6 py-3 bg-red-50 border-b border-red-100 flex items-center gap-2 text-red-700 text-sm font-medium">
                 <WarnIcon />
-                Total delay exceeds the {profile.budget} ns switch range. Check cable length.
+                Total delay exceeds the {profile.budget} ns switch range. Check total length.
               </div>
             )}
 
