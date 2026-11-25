@@ -78,7 +78,7 @@ function drawFlow(doc, startY, radiators, margin, width) {
         doc.setFont('helvetica', 'bold')
         doc.setFontSize(8.5)
         doc.setTextColor(...(over ? RED : INK))
-        doc.text(`SW ${item.switchHex}`, x + w / 2, y + 16.5, { align: 'center' })
+        doc.text(`SW ${item.switchPosition}`, x + w / 2, y + 16.5, { align: 'center' })
       }
 
       // connector
@@ -104,7 +104,7 @@ function drawFlow(doc, startY, radiators, margin, width) {
   return y
 }
 
-export function generateDelayPdf({ results, cableDelay, constants, title }) {
+export function generateDelayPdf({ results, cableDelay, profile, title }) {
   const active = results.filter(r => r.radiators.length > 0)
   const docTitle = (title || '').trim() || 'Delay Switch Report'
   const doc = new jsPDF({ unit: 'mm', format: 'a4' })
@@ -129,7 +129,7 @@ export function generateDelayPdf({ results, cableDelay, constants, title }) {
   doc.text(new Date().toLocaleDateString(), pageW - margin.right, y, { align: 'right' })
   y += 5
   doc.setFontSize(8.5)
-  doc.text(`Cable ${fmt(cableDelayNum, 2)} ns/m  ·  Max ${fmt(systemMaxLen)} m (${fmt(systemMaxDelay)} ns)`, margin.left, y)
+  doc.text(`${profile.name}  ·  ${profile.step} ns steps  ·  Cable ${fmt(cableDelayNum, 2)} ns/m  ·  Max ${fmt(systemMaxLen)} m (${fmt(systemMaxDelay)} ns)`, margin.left, y)
   y += 3
   doc.setDrawColor(...LINE)
   doc.setLineWidth(0.4)
@@ -161,7 +161,7 @@ export function generateDelayPdf({ results, cableDelay, constants, title }) {
       body: out.radiators.map(rad => [
         `RAD-${String(rad.radNr).padStart(2, '0')}  ·  ${fmt(rad.cableLength)} m`,
         `${fmt(rad.delayNs)} ns`,
-        `${rad.switchHex}`,
+        `${rad.switchPosition}`,
       ]),
       theme: 'plain',
       styles: { font: 'helvetica', fontSize: 8.5, cellPadding: 1.8, textColor: INK, lineColor: LINE, lineWidth: 0 },
@@ -182,11 +182,11 @@ export function generateDelayPdf({ results, cableDelay, constants, title }) {
     })
     y = doc.lastAutoTable.finalY + 2
 
-    if (out.maxDelay > constants.THEORETICAL_MAX_DELAY) {
+    if (out.maxDelay > profile.budget) {
       doc.setFont('helvetica', 'normal')
       doc.setFontSize(8)
       doc.setTextColor(...RED)
-      doc.text('Exceeds maximum — shorten cable.', margin.left, y + 4)
+      doc.text(`Exceeds ${profile.budget} ns switch range — shorten cable.`, margin.left, y + 4)
       y += 8
     }
 
@@ -203,7 +203,7 @@ export function generateDelayPdf({ results, cableDelay, constants, title }) {
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(7)
   doc.setTextColor(...GRAY)
-  doc.text('SW = ROUND((system max − local) / 33).  Set each radiator switch to its SW value.', margin.left, y)
+  doc.text(`SW = round((system max − local) / ${profile.step}).  Set each radiator switch to its SW value.`, margin.left, y)
 
   const pages = doc.getNumberOfPages()
   for (let i = 1; i <= pages; i++) {

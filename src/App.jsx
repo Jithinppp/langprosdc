@@ -321,8 +321,7 @@ function ResultsSection({ results, cableDelay, profile }) {
       generateDelayPdf({
         results,
         cableDelay,
-        // bridge until Task 3 swaps generateDelayPdf to the full profile
-        constants: { THEORETICAL_MAX_DELAY: profile.budget },
+        profile,
         title: reportTitle.trim() || 'Delay Switch Report',
       })
     } catch (err) {
