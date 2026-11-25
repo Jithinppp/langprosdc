@@ -224,6 +224,7 @@ export function HowToGuide({ onBack }) {
         {/* Control reference */}
         <section className="mb-10 print:break-inside-avoid">
           <h2 className="text-xl font-semibold text-neutral-900 mb-3">Control reference</h2>
+          <div className="overflow-x-auto">
           <table className="w-full text-left text-sm text-neutral-600">
             <thead className="bg-white border-b border-neutral-200 text-xs uppercase text-neutral-500">
               <tr>
@@ -306,6 +307,7 @@ export function HowToGuide({ onBack }) {
               </tr>
             </tbody>
           </table>
+        </div>
         </section>
 
         {/* Worked example */}
@@ -315,6 +317,7 @@ export function HowToGuide({ onBack }) {
             Bosch INTEGRUS, 33 ns step, cable delay 4.0 ns/m, segments
             <span className="font-mono">25 / 25 / 50 / 100 / 50 m</span>:
           </p>
+          <div className="overflow-x-auto">
           <table className="w-full text-left text-sm text-neutral-600">
             <thead className="bg-white border-b border-neutral-200 text-xs uppercase text-neutral-500">
               <tr>
@@ -363,6 +366,7 @@ export function HowToGuide({ onBack }) {
               </tr>
             </tbody>
           </table>
+        </div>
         </section>
 
         {/* Bottom navigation */}
