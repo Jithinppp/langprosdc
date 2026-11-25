@@ -73,7 +73,7 @@ function drawFlow(doc, startY, radiators, margin, width) {
         doc.setFont('helvetica', 'normal')
         doc.setFontSize(7)
         doc.setTextColor(...GRAY)
-        doc.text(`${fmt(item.cableLength)} m · ${fmt(item.delayNs)} ns`, x + w / 2, y + 11.5, { align: 'center' })
+        doc.text(`${fmt(item.cumulativeLength)} m · ${fmt(item.delayNs)} ns`, x + w / 2, y + 11.5, { align: 'center' })
 
         doc.setFont('helvetica', 'bold')
         doc.setFontSize(8.5)
@@ -114,7 +114,7 @@ export function generateDelayPdf({ results, cableDelay, profile, title }) {
   const width = pageW - margin.left - margin.right
 
   const cableDelayNum = parseFloat(cableDelay) || 0
-  const systemMaxLen = active.reduce((m, r) => Math.max(m, ...r.radiators.map(x => x.cableLength || 0)), 0)
+  const systemMaxLen = active.reduce((m, r) => Math.max(m, ...r.radiators.map(x => x.cumulativeLength || 0)), 0)
   const systemMaxDelay = systemMaxLen * cableDelayNum
 
   // ---- Minimal header ----
@@ -159,7 +159,7 @@ export function generateDelayPdf({ results, cableDelay, profile, title }) {
       margin: { left: margin.left, right: margin.right },
       head: [['Radiator', 'Delay', 'Switch']],
       body: out.radiators.map(rad => [
-        `RAD-${String(rad.radNr).padStart(2, '0')}  ·  ${fmt(rad.cableLength)} m`,
+        `RAD-${String(rad.radNr).padStart(2, '0')}  ·  ${fmt(rad.cumulativeLength)} m`,
         `${fmt(rad.delayNs)} ns`,
         `${rad.switchPosition}`,
       ]),

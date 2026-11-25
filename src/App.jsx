@@ -252,7 +252,7 @@ function App() {
             {/* Cable Lengths Grid */}
             {currentOutput.numRadiators > 0 ? (
               <>
-              <p className="text-xs text-neutral-500 mb-4">Enter the total cable length from the transmitter (TX) to each radiator.</p>
+              <p className="text-xs text-neutral-500 mb-4">Enter the segment length from the previous radiator (or TX for the first). Totals are calculated automatically.</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {currentOutput.radiators.map((rad, i) => (
                   <div key={i} className="flex flex-col p-4 border border-neutral-200 rounded-lg bg-neutral-50/50">

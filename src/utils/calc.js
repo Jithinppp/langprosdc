@@ -16,47 +16,40 @@ export function profileFor(manufacturerKey, televicStep = 33) {
 }
 
 export function calculateDelays(outputs, cableDelay, profile) {
-  // 1. Find the maximum trunk length across ALL outputs to find the System Max Delay.
+  // 1. Sum each daisy chain into cumulative runs and find the global max run.
   // The switch makes all radiators delay to fire at the same timestamp as the furthest radiator.
   let maxSystemTrunkLength = 0
-  outputs.forEach(output => {
-    output.radiators.forEach(rad => {
-      const length = parseFloat(rad.length) || 0
-      if (length > maxSystemTrunkLength) {
-        maxSystemTrunkLength = length
+  const runs = outputs.map(output => {
+    let cumulative = 0
+    return output.radiators.map(rad => {
+      const segment = parseFloat(rad.length) || 0
+      cumulative += segment
+      if (cumulative > maxSystemTrunkLength) {
+        maxSystemTrunkLength = cumulative
       }
+      return { segment, cumulative }
     })
   })
 
   const systemMaxDelayNs = maxSystemTrunkLength * cableDelay
 
-  // 2. Calculate individual delays and switches.
+  // 2. Calculate individual delays and switches against the global max.
   return outputs.map((output, i) => {
     let outputTotalLength = 0
-    let previousLength = 0
-    const radiators = output.radiators.map((rad, j) => {
-      const length = parseFloat(rad.length) || 0
-
-      // Input is the total cable length from TX to the radiator (guide Scenario A),
-      // so the local delay follows directly from it.
-      const localDelayNs = length * cableDelay
+    const radiators = runs[i].map((row, j) => {
+      const localDelayNs = row.cumulative * cableDelay
 
       // Switch: ROUND((SystemMaxDelayNs − LocalDelayNs) / step), two decimal dials.
       const switchPosition = String(Math.round((systemMaxDelayNs - localDelayNs) / profile.step)).padStart(2, '0')
 
-      // Segment between this radiator and the previous one on the daisy chain.
-      const segmentLength = j === 0 ? length : length - previousLength
-
-      if (length > outputTotalLength) {
-        outputTotalLength = length
+      if (row.cumulative > outputTotalLength) {
+        outputTotalLength = row.cumulative
       }
-      previousLength = length
 
       return {
         radNr: j + 1,
-        cableLength: length,
-        segmentLength,
-        cumulativeLength: length,
+        segmentLength: row.segment,
+        cumulativeLength: row.cumulative,
         delayNs: localDelayNs,
         switchPosition,
         isOverMax: localDelayNs > profile.budget,

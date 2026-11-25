@@ -1,11 +1,12 @@
 import { describe, it, expect } from 'vitest'
 import { MANUFACTURERS, profileFor, calculateDelays } from './calc.js'
 
-// Guide worked example: daisy chain, tprop 4.0 ns/m,
-// totals 25/50/100/200/250 m, global DMAX = 1000 ns
+// Guide worked example, segment inputs: "Output → R1 = 25 m, R1 → R2 = 25 m,
+// R2 → R3 = 50 m, R3 → R4 = 100 m, R4 → R5 = 50 m" at tprop 4.0 ns/m,
+// giving totals 25/50/100/200/250 m and a global DMAX of 1000 ns
 const exampleOutputs = [{
   numRadiators: 5,
-  radiators: [{ length: '25' }, { length: '50' }, { length: '100' }, { length: '200' }, { length: '250' }],
+  radiators: [{ length: '25' }, { length: '25' }, { length: '50' }, { length: '100' }, { length: '50' }],
 }]
 
 describe('profileFor', () => {
@@ -78,11 +79,20 @@ describe('edge cases', () => {
     })
   })
 
-  it('non-monotonic totals: negative segment is shown, delay uses the entered total', () => {
-    const out = [{ numRadiators: 2, radiators: [{ length: '100' }, { length: '50' }] }]
+  it('negative segment: shown as-is, reduces the total', () => {
+    const out = [{ numRadiators: 2, radiators: [{ length: '100' }, { length: '-25' }] }]
     const [, r2] = calculateDelays(out, 4.0, profileFor('bosch'))[0].radiators
-    expect(r2.segmentLength).toBe(-50)
-    expect(r2.cumulativeLength).toBe(50)
-    expect(r2.delayNs).toBe(200)
+    expect(r2.segmentLength).toBe(-25)
+    expect(r2.cumulativeLength).toBe(75)
+    expect(r2.delayNs).toBe(300)
+    expect(r2.switchPosition).toBe('03')   // (400 − 300) / 33
+  })
+
+  it('empty segment among filled: chain keeps summing', () => {
+    const out = [{ numRadiators: 3, radiators: [{ length: '25' }, { length: '' }, { length: '50' }] }]
+    const rads = calculateDelays(out, 4.0, profileFor('bosch'))[0].radiators
+    expect(rads.map(r => r.cumulativeLength)).toEqual([25, 25, 75])
+    expect(rads.map(r => r.segmentLength)).toEqual([25, 0, 50])
+    expect(rads.map(r => r.switchPosition)).toEqual(['06', '06', '00'])
   })
 })
