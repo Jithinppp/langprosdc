@@ -55,6 +55,7 @@ function App() {
     Array.from({ length: 6 }, () => ({ numRadiators: 0, radiators: [] }))
   )
   const [results, setResults] = useState(null)
+  const [calcProfile, setCalcProfile] = useState(null)
   const resultsRef = useRef(null)
   const profile = profileFor(manufacturer, televicStep)
 
@@ -84,6 +85,9 @@ function App() {
   const handleCalculate = () => {
     const res = calculateDelays(outputs, cableDelay, profile)
     setResults(res)
+    // Snapshot: results must render (and export) against the profile they were
+    // calculated with, not whatever is selected after the fact.
+    setCalcProfile(profile)
     setTimeout(() => {
       resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }, 100)
@@ -96,6 +100,7 @@ function App() {
     setActiveTab(0)
     setOutputs(Array.from({ length: 6 }, () => ({ numRadiators: 0, radiators: [] })))
     setResults(null)
+    setCalcProfile(null)
   }
 
   const currentOutput = outputs[activeTab]
@@ -114,7 +119,7 @@ function App() {
             Delay Switch Calculator
           </h1>
           <p className="text-neutral-500 text-sm max-w-lg">
-            Calculate infrared signal propagation delays and switch settings for Bosch INTEGRUS radiators.
+            Calculate infrared signal propagation delays and switch settings for Bosch, TAIDEN and Televic IR radiator systems.
           </p>
         </header>
 
@@ -301,7 +306,7 @@ function App() {
 
         {/* Results Section */}
         <div ref={resultsRef}>
-          {results && <ResultsSection results={results} cableDelay={cableDelay} profile={profile} />}
+          {results && <ResultsSection results={results} cableDelay={cableDelay} profile={calcProfile} />}
         </div>
 
       </div >
