@@ -66,6 +66,7 @@ function App() {
   const resultsRef = useRef(null)
   const [view, setView] = useState('calculator')
   const howToLinkRef = useRef(null)
+  const [reportTitle, setReportTitle] = useState('Delay Switch Report')
   const profile = profileFor(manufacturer, televicStep)
 
   const handleNumRadiators = (value) => {
@@ -110,6 +111,7 @@ function App() {
     setOutputs(Array.from({ length: 6 }, () => ({ numRadiators: 0, radiators: [] })))
     setResults(null)
     setCalcProfile(null)
+    setReportTitle('Delay Switch Report')
   }
 
   const handleOpenGuide = () => {
@@ -340,7 +342,7 @@ function App() {
 
         {/* Results Section */}
         <div ref={resultsRef}>
-          {results && <ResultsSection results={results} cableDelay={cableDelay} profile={calcProfile} />}
+          {results && <ResultsSection results={results} cableDelay={cableDelay} profile={calcProfile} reportTitle={reportTitle} setReportTitle={setReportTitle} />}
         </div>
 
       </div >
@@ -351,9 +353,8 @@ function App() {
 // ============================================================
 // Results Section
 // ============================================================
-function ResultsSection({ results, cableDelay, profile }) {
+function ResultsSection({ results, cableDelay, profile, reportTitle, setReportTitle }) {
   const activeResults = results.filter(r => r.radiators.length > 0)
-  const [reportTitle, setReportTitle] = useState('Delay Switch Report')
 
   const handleDownloadPdf = () => {
     try {
