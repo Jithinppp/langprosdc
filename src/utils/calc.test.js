@@ -80,7 +80,7 @@ describe('edge cases', () => {
 
   it('non-monotonic totals: negative segment is shown, delay uses the entered total', () => {
     const out = [{ numRadiators: 2, radiators: [{ length: '100' }, { length: '50' }] }]
-    const [r1, r2] = calculateDelays(out, 4.0, profileFor('bosch'))[0].radiators
+    const [, r2] = calculateDelays(out, 4.0, profileFor('bosch'))[0].radiators
     expect(r2.segmentLength).toBe(-50)
     expect(r2.cumulativeLength).toBe(50)
     expect(r2.delayNs).toBe(200)

@@ -1,70 +1,12 @@
 import { useState, useRef } from 'react'
 import icon from './assets/icon.png'
 import { generateDelayPdf } from './utils/generateDelayPdf'
+import { MANUFACTURERS, profileFor, calculateDelays } from './utils/calc'
 
 // ============================================================
 // Constants
 // ============================================================
 const DEFAULT_CABLE_DELAY = 5.67 // ns/m
-const MAX_TRUNK_LENGTH = 576 // meters
-const THEORETICAL_MAX_DELAY = 3267 // ns
-const MAX_SWITCH_POSITIONS = 15 // 0–F hex
-const STEP_SIZE = THEORETICAL_MAX_DELAY / MAX_SWITCH_POSITIONS // ~217.8 ns
-
-// ============================================================
-// Calculation
-// ============================================================
-function calculateDelays(outputs, cableDelay) {
-  // 1. Find the maximum trunk length across ALL outputs to find the System Max Delay
-  // The switch makes all radiators delay to fire at the exact same timestamp as the furthest radiator.
-  let maxSystemTrunkLength = 0
-  outputs.forEach(output => {
-    output.radiators.forEach(rad => {
-      const length = parseFloat(rad.length) || 0
-      if (length > maxSystemTrunkLength) {
-        maxSystemTrunkLength = length
-      }
-    })
-  })
-
-  const systemMaxDelayNs = maxSystemTrunkLength * cableDelay
-
-  // 2. Calculate individual delays and switches
-  return outputs.map((output, i) => {
-    let outputTotalLength = 0
-    const radiators = output.radiators.map((rad, j) => {
-      const length = parseFloat(rad.length) || 0
-
-      // The Excel sheet uses direct length (Lm) for the trunk length to that radiator.
-      const localDelayNs = length * cableDelay
-
-      // Switch calculation: 
-      // Formula: ROUND((SystemMaxDelayNs - LocalDelayNs) / 33, 0)
-      const switchPosDec = Math.max(0, Math.round((systemMaxDelayNs - localDelayNs) / 33))
-
-      if (length > outputTotalLength) {
-        outputTotalLength = length
-      }
-
-      return {
-        radNr: j + 1,
-        cableLength: length,
-        cumulativeLength: length,
-        delayNs: localDelayNs,
-        switchPosition: switchPosDec,
-        switchHex: switchPosDec.toString(10), // The switches use decimal digits
-        isOverMax: length > MAX_TRUNK_LENGTH,
-      }
-    })
-
-    return {
-      outputNr: i + 1,
-      totalLength: outputTotalLength,
-      maxDelay: outputTotalLength * cableDelay,
-      radiators,
-    }
-  })
-}
 
 // ============================================================
 // Icons
@@ -106,12 +48,15 @@ const DownloadIcon = () => (
 // ============================================================
 function App() {
   const [cableDelay, setCableDelay] = useState(DEFAULT_CABLE_DELAY)
+  const [manufacturer, setManufacturer] = useState('bosch')
+  const [televicStep, setTelevicStep] = useState(33)
   const [activeTab, setActiveTab] = useState(0)
   const [outputs, setOutputs] = useState(
     Array.from({ length: 6 }, () => ({ numRadiators: 0, radiators: [] }))
   )
   const [results, setResults] = useState(null)
   const resultsRef = useRef(null)
+  const profile = profileFor(manufacturer, televicStep)
 
   const handleNumRadiators = (value) => {
     const num = Math.max(0, Math.min(50, parseInt(value) || 0))
@@ -137,7 +82,7 @@ function App() {
   }
 
   const handleCalculate = () => {
-    const res = calculateDelays(outputs, cableDelay)
+    const res = calculateDelays(outputs, cableDelay, profile)
     setResults(res)
     setTimeout(() => {
       resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -146,6 +91,8 @@ function App() {
 
   const handleReset = () => {
     setCableDelay(DEFAULT_CABLE_DELAY)
+    setManufacturer('bosch')
+    setTelevicStep(33)
     setActiveTab(0)
     setOutputs(Array.from({ length: 6 }, () => ({ numRadiators: 0, radiators: [] })))
     setResults(null)
@@ -173,6 +120,44 @@ function App() {
 
         {/* Global Configuration */}
         <div className="bg-white rounded-xl border border-neutral-200 shadow-sm p-5 w-full md:w-max mx-auto mb-8">
+          <div className="mb-5 pb-5 border-b border-neutral-100">
+            <span className="block text-sm font-semibold text-neutral-900 mb-1">Radiator Manufacturer</span>
+            <p className="text-xs text-neutral-500 mb-3">Switch step size follows the manufacturer's delay switch.</p>
+            <div role="group" aria-label="Radiator manufacturer" className="flex flex-wrap items-center gap-2">
+              {Object.values(MANUFACTURERS).map(m => (
+                <button
+                  key={m.key}
+                  onClick={() => setManufacturer(m.key)}
+                  aria-pressed={manufacturer === m.key}
+                  className={`px-4 py-2 text-sm font-medium rounded-lg border transition-colors ${
+                    manufacturer === m.key
+                      ? 'bg-neutral-900 text-white border-neutral-900'
+                      : 'bg-white text-neutral-600 border-neutral-300 hover:border-neutral-400 hover:text-neutral-900'
+                  }`}
+                >
+                  {m.label}
+                </button>
+              ))}
+              {manufacturer === 'televic' && (
+                <div className="flex items-center gap-1 ml-2" role="group" aria-label="Televic switch step size">
+                  {[25, 33].map(s => (
+                    <button
+                      key={s}
+                      onClick={() => setTelevicStep(s)}
+                      aria-pressed={televicStep === s}
+                      className={`px-2.5 py-1 text-xs font-semibold rounded-md border transition-colors ${
+                        televicStep === s
+                          ? 'bg-neutral-900 text-white border-neutral-900'
+                          : 'bg-white text-neutral-500 border-neutral-300 hover:border-neutral-400 hover:text-neutral-900'
+                      }`}
+                    >
+                      {s} ns
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-neutral-100 text-neutral-600">
@@ -207,11 +192,11 @@ function App() {
             <div className="flex flex-col gap-1 text-sm text-neutral-600">
               <div className="flex justify-between gap-4">
                 <span>Max Trunk Length:</span>
-                <span className="font-semibold text-neutral-900">{MAX_TRUNK_LENGTH} m</span>
+                <span className="font-semibold text-neutral-900">{cableDelay > 0 ? Math.round(profile.budget / cableDelay) : '—'} m</span>
               </div>
               <div className="flex justify-between gap-4">
                 <span>Theoretical Max Delay:</span>
-                <span className="font-semibold text-neutral-900">{THEORETICAL_MAX_DELAY} ns</span>
+                <span className="font-semibold text-neutral-900">{profile.budget} ns</span>
               </div>
             </div>
           </div>
@@ -261,6 +246,8 @@ function App() {
 
             {/* Cable Lengths Grid */}
             {currentOutput.numRadiators > 0 ? (
+              <>
+              <p className="text-xs text-neutral-500 mb-4">Enter the total cable length from the transmitter (TX) to each radiator.</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {currentOutput.radiators.map((rad, i) => (
                   <div key={i} className="flex flex-col p-4 border border-neutral-200 rounded-lg bg-neutral-50/50">
@@ -285,6 +272,7 @@ function App() {
                   </div>
                 ))}
               </div>
+              </>
             ) : (
               <div className="py-12 text-center">
                 <p className="text-sm text-neutral-500">Configure radiators to start entering cable lengths.</p>
@@ -313,7 +301,7 @@ function App() {
 
         {/* Results Section */}
         <div ref={resultsRef}>
-          {results && <ResultsSection results={results} cableDelay={cableDelay} />}
+          {results && <ResultsSection results={results} cableDelay={cableDelay} profile={profile} />}
         </div>
 
       </div >
@@ -324,7 +312,7 @@ function App() {
 // ============================================================
 // Results Section
 // ============================================================
-function ResultsSection({ results, cableDelay }) {
+function ResultsSection({ results, cableDelay, profile }) {
   const activeResults = results.filter(r => r.radiators.length > 0)
   const [reportTitle, setReportTitle] = useState('Delay Switch Report')
 
@@ -333,7 +321,8 @@ function ResultsSection({ results, cableDelay }) {
       generateDelayPdf({
         results,
         cableDelay,
-        constants: { MAX_TRUNK_LENGTH, THEORETICAL_MAX_DELAY },
+        // bridge until Task 3 swaps generateDelayPdf to the full profile
+        constants: { THEORETICAL_MAX_DELAY: profile.budget },
         title: reportTitle.trim() || 'Delay Switch Report',
       })
     } catch (err) {
@@ -394,7 +383,7 @@ function ResultsSection({ results, cableDelay }) {
                 </div>
                 <div className="flex flex-col">
                   <span className="text-xs text-neutral-500 uppercase tracking-wide">Max Delay</span>
-                  <span className={`font-mono font-semibold ${r.maxDelay > THEORETICAL_MAX_DELAY ? 'text-red-600' : 'text-neutral-900'}`}>
+                  <span className={`font-mono font-semibold ${r.maxDelay > profile.budget ? 'text-red-600' : 'text-neutral-900'}`}>
                     {r.maxDelay.toFixed(1)} ns
                   </span>
                 </div>
@@ -402,10 +391,10 @@ function ResultsSection({ results, cableDelay }) {
             </div>
 
             {/* Warning if exceeded max delay */}
-            {r.maxDelay > THEORETICAL_MAX_DELAY && (
+            {r.maxDelay > profile.budget && (
               <div className="px-6 py-3 bg-red-50 border-b border-red-100 flex items-center gap-2 text-red-700 text-sm font-medium">
                 <WarnIcon />
-                Total delay exceeds theoretical maximum of {THEORETICAL_MAX_DELAY} ns. Check cable length.
+                Total delay exceeds the {profile.budget} ns switch range. Check cable length.
               </div>
             )}
 
@@ -427,7 +416,7 @@ function ResultsSection({ results, cableDelay }) {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="font-medium text-neutral-900">RAD-{String(rad.radNr).padStart(2, '0')}</span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap font-mono">{rad.cableLength.toFixed(1)} m</td>
+                      <td className="px-6 py-4 whitespace-nowrap font-mono">{rad.segmentLength.toFixed(1)} m</td>
                       <td className={`px-6 py-4 whitespace-nowrap font-mono ${rad.isOverMax ? 'text-red-600 font-semibold' : ''}`}>
                         {rad.cumulativeLength.toFixed(1)} m
                       </td>
@@ -439,7 +428,7 @@ function ResultsSection({ results, cableDelay }) {
                           ? 'bg-red-50 border-red-200 text-red-700'
                           : 'bg-white border-neutral-300 text-neutral-900 shadow-sm'
                           }`}>
-                          {rad.switchHex}
+                          {rad.switchPosition}
                         </span>
                       </td>
                     </tr>
